@@ -1,3 +1,5 @@
+import { JSONPath } from "jsonpath-plus";
+
 /**
  * 解析表达式
  * @param expression 表达式字符串
@@ -6,32 +8,43 @@
  */
 
 export default function expressionParser(expression: string, contextData: any): string {
-  // 核心逻辑：
-  // 将形如 '$.path.to.value' 的字符串字面量（必须包含 $）转换为 jp('$.path.to.value')
-  // 这样 Jexl 就会调用我们注册的 jp 函数来解析 JSONPath
+  // Logic:
+  // 1. Identify JSONPath strings (e.g. '$.store.book')
+  // 2. Resolve them using jsonpath-plus
+  // 3. Store results in temporary context variables
+  // 4. Replace JSONPath strings in expression with variable names
   
-  // 匹配单引号或双引号包裹的字符串，且字符串内容以 $ 开头，并且紧接着 . 或 [
-  // 这样避免匹配到普通的 "$" 字符串（如 replace('$', '')）
-  // regex explanation:
-  // (['"])      -> capture group 1: starting quote
-  // (\$[.\[].*?) -> capture group 2: starts with $ followed by . or [, non-greedy
-  // \1          -> matching ending quote
+  // Match quoted strings starting with $ followed by . or [
   const regex = /(['"])(\$[.\[].*?)\1/g;
   
-  // 替换为 jp('match')
-  // 注意：我们需要保留原来的引号或者统一使用单引号/双引号
-  // 这里我们选择保留原来的引号内容，并包裹在 jp() 中
-  // 假设 expression 是 "'$.foo'" -> "jp('$.foo')"
-  
+  let matchIndex = 0;
+
   const parsed = expression.replace(regex, (match, quote, content) => {
-    // match is "'$.foo'"
-    // quote is "'"
-    // content is "$.foo"
-    return `jp(${quote}${content}${quote})`;
+    // content is the JSONPath string (e.g. "$.foo")
+    
+    // Use contextData.$ if available to avoid duplicates from context spreading
+    const jsonTarget = contextData.$ !== undefined ? contextData.$ : contextData;
+    
+    const res = JSONPath({
+      path: content,
+      json: jsonTarget,
+      wrap: false
+    });
+    
+    // Unwrap single element array
+    let finalRes = res;
+    if (Array.isArray(res) && res.length === 1) {
+      finalRes = res[0];
+    }
+    
+    // Inject into context
+    const tempVarName = `__jp_${matchIndex++}`;
+    contextData[tempVarName] = finalRes;
+    
+    return tempVarName;
   });
 
-  // 支持 .replace() 语法转换为管道语法 | replace()
-  // 简单处理：将 .replace( 替换为 | replace(
+  // Support .replace() syntax -> | replace()
   const finalExpression = parsed.replace(/\.replace\(/g, ' | replace(');
 
   return finalExpression;

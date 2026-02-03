@@ -1,6 +1,6 @@
 {
   "name": "@fett/jexpath",
-  "version": "0.0.1",
+  "version": "0.0.1-beta.1",
   "description": "JexPath is a library that allows you to use JSONPath expressions in Jexl.",
   "main": "./lib/index.js",
   "keywords": ["jexl", "jsonpath", "expression"],
