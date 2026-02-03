@@ -1,9 +1,13 @@
 {
   "name": "@fett/jexpath",
-  "version": "0.0.1-beta.1",
+  "version": "0.0.1-beta.2",
   "description": "JexPath is a library that allows you to use JSONPath expressions in Jexl.",
   "main": "./lib/index.js",
-  "keywords": ["jexl", "jsonpath", "expression"],
+  "keywords": [
+    "jexl",
+    "jsonpath",
+    "expression"
+  ],
   "type": "module",
   "author": "ChrisSong1994 <https://github.com/ChrisSong1994>",
   "scripts": {
@@ -19,6 +23,7 @@
   "license": "ISC",
   "packageManager": "pnpm@10.12.3",
   "dependencies": {
+    "dayjs": "^1.11.19",
     "jexl": "^2.3.0",
     "jsonpath-plus": "^10.3.0"
   },

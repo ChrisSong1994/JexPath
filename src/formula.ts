@@ -1,6 +1,7 @@
 /**
  * Register built-in and custom formulas (functions/transforms)
  */
+import dayjs from "dayjs";
 import { Jexl } from "jexl";
 
 function size(val: any[] | string) {
@@ -24,6 +25,10 @@ function trim(str: string) {
   return str;
 }
 
+function date(val: string, format: string) {
+  return dayjs(val).format(format);
+}
+
 function parseJson(str: string) {
   if (typeof str === "string") {
     try {
@@ -39,6 +44,7 @@ const innerFormulas = {
   SIZE: size,
   REPLACE: replace,
   TRIM: trim,
+  DATE: date,
   PARSE_JSON: parseJson,
 };
 
