@@ -4,18 +4,29 @@
 import { JSONPath } from "jsonpath-plus";
 import { Jexl } from "jexl";
 
-// 扩展： string 转换成数字
-function toNumber(str: string, float: boolean = false) {
-  if (typeof str === "string") {
-    return float ? parseFloat(str) : Number(str);
+// 扩展：计算值的 size
+function size(val: any[] | string) {
+  if (Array.isArray(val)) {
+    return val.length;
   }
-  return str;
+  if (typeof val === "string") {
+    return val.length;
+  }
+  return 0;
 }
 
 // 扩展：支持字符串替换
 function replace(str: string, search: string, replace: string) {
   if (typeof str === "string") {
     return str.replace(search, replace);
+  }
+  return str;
+}
+
+// 扩展： 支持 trim 函数
+function trim(str: string) {
+  if (typeof str === "string") {
+    return str.trim();
   }
   return str;
 }
@@ -33,9 +44,10 @@ function parseJson(str: string) {
 }
 
 const innerFormulas = {
-  toNumber,
-  replace,
-  parseJson,
+  SIZE: size,
+  REPLACE: replace,
+  TRIM: trim,
+  PARSE_JSON: parseJson,
 };
 
 export default function registerFormulas(jexl: Jexl, contextData: any) {
@@ -69,5 +81,16 @@ export default function registerFormulas(jexl: Jexl, contextData: any) {
       return res[0];
     }
     return res;
+  });
+
+  // 注册 replace 变换器
+  jexl.addTransform("replace", replace);
+
+  // 注册 length 变换器
+  jexl.addTransform("length", (val: any) => {
+    if (Array.isArray(val) || typeof val === "string") {
+      return val.length;
+    }
+    return 0;
   });
 }
