@@ -11,6 +11,7 @@ describe("表达式计算引擎", () => {
       { id: 2, val: 10 },
     ],
     c: "100 $",
+    timestamp: 1672531200000,
   };
 
   const myEngine = new JexPath(data);
@@ -44,5 +45,13 @@ describe("表达式计算引擎", () => {
     const result = await myEngine.run("TRIM(REPLACE($.c, '$', ''))");
     // 100 $ -> 100 100
     expect(result).toBe("100");
+  });
+
+  // 时间格式
+  it("时间格式", async () => {
+    // 逻辑：将 timestamp 转换为日期字符串
+    const result = await myEngine.run("DATE($.timestamp, 'YYYY-MM-DD')");
+    // 2023-01-01
+    expect(result).toBe("2023-01-01");
   });
 });

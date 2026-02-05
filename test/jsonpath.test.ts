@@ -46,7 +46,7 @@ describe("JSONPath Complex Usage", () => {
         "key.with.dots": "value2"
       }
     },
-    expensive: 10
+    expensive: 10,
   };
 
   const engine = new JexPath(storeData);
