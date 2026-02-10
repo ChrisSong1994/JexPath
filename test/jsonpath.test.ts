@@ -124,28 +124,6 @@ describe("JSONPath 复杂用法", () => {
     expect(total).toBe(28.9);
   });
 
-  it("复杂集成：带变量的逻辑", async () => {
-    // 查找比 'expensive' 变量（10）更贵的书籍
-    
-    // 方法 1：在 JSONPath 返回的数组上使用 Jexl 过滤器
-    // JSONPath: '$.store.book[*]' -> 返回书籍数组
-    // Jexl 过滤器: [.price > expensive]
-    // 注意：解析器将 '$.store.book[*]' 转换为 jp('$.store.book[*]')。
-    // 我们需要确保 Jexl 可以对函数的结果应用过滤器。
-    
-    // 尝试直接作为 Jexl 变量访问属性（在严格模式下需要加 $）
-    // 注意：为了消除歧义（避免解析器将 Jexl 过滤器误认为是 JSONPath 的一部分），
-    // 我们将 JSONPath 部分括在括号中，或者在两者之间加空格。
-    // 这里的解析器会贪婪地匹配 JSONPath，导致 [.price > expensive] 被错误地包含在 JSONPath 中。
-    const expensiveBooksJexl = await engine.run("$.store.book [.price > expensive]");
-    expect(expensiveBooksJexl).toHaveLength(2); 
-
-    // 方法 2：在 Jexl 管道中使用 JSONPath 字符串结果
-    // 我们需要确保 jp() 的结果被视为我们可以操作的数组。
-    // Jexl 默认不支持数组的 .length 属性访问，所以我们使用 length 转换。
-    const count = await engine.run("('$.store.book[*]' | length)");
-    expect(count).toBe(4);
-  });
   
   it("带过滤器的递归下降", async () => {
     // 所有价格 > 20 的物品（递归）

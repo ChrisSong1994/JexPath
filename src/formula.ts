@@ -1,5 +1,5 @@
 /**
- * Register built-in and custom formulas (functions/transforms)
+ * 注册内置和自定义公式（函数/转换）
  */
 import dayjs from "dayjs";
 import { Jexl } from "jexl";
@@ -55,28 +55,28 @@ export default function registerFormulas(
     customTransforms?: Record<string, (a: any, b: any) => any>;
   },
 ) {
-  // Built-in functions
+  // 内置函数
   Object.keys(innerFormulas).forEach((key) => {
     jexl.addFunction(key, innerFormulas[key]);
   });
 
-  // Custom functions
+  // 自定义函数
   if (options?.customFunctions) {
     Object.keys(options.customFunctions).forEach((key) => {
       jexl.addFunction(key, options.customFunctions[key]);
     });
   }
 
-  // Custom transforms
+  // 自定义转换
   if (options?.customTransforms) {
     Object.keys(options.customTransforms).forEach((key) => {
       jexl.addTransform(key, options.customTransforms[key]);
     });
   }
 
-  // Built-in transforms
-  jexl.addTransform("replace", replace);
-  jexl.addTransform("size", size);
-  jexl.addTransform("length", size); // Alias for size
-  jexl.addTransform("trim", trim);
+  // 内置转换
+  // jexl.addTransform("replace", replace);
+  // jexl.addTransform("size", size);
+  // jexl.addTransform("length", size); // Alias for size
+  // jexl.addTransform("trim", trim);
 }

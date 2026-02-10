@@ -18,15 +18,15 @@ describe("表达式计算引擎", () => {
 
   it("取值计算", async () => {
     // 逻辑：取 items 里 val > 6 的项的 val，加上 a
-    const result = await myEngine.run("'$.items[?(@.val > 6)].val' + $.a");
+    const result = await myEngine.run("$.items[?(@.val > 6)].val + $.a");
     // items[1].val is 10. 10 + 1 = 11.
     expect(result).toBe(11);
   });
 
   it("PARSE_JSON 解析JSON字符串并计算", async () => {
     // 逻辑：解析字符串后取值，再跟基础变量计算
+    // 注意：在严格模式下，不允许使用 .score 访问属性。
     const result = await myEngine.run("PARSE_JSON($['json-str']).score * $.a");
-    // 100 * 1 = 100
     expect(result).toBe(100);
   });
 
@@ -59,7 +59,7 @@ describe("表达式计算引擎", () => {
     // 合法
     expect(myEngine.validate("1 + 1")).toBe(true);
     expect(myEngine.validate("SIZE('abc') > 0")).toBe(true);
-    
+
     // 非法语法
     expect(myEngine.validate("1 +")).toBe(false);
     expect(myEngine.validate("UNKNOWN()")).toBe(false);

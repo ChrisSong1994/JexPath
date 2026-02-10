@@ -49,15 +49,18 @@ export default class JexPath {
    * @returns 表达式执行结果
    */
   async run(expression: string, context: Record<string, any> = {}) {
+    // 强制执行严格的语法验证
+    validateSyntax(expression);
+
     const finalContext = {
       $: this.contextData,
       ...this.contextData,
       ...context,
     };
 
-    // Ensure $ points to the correct context root
+    // 确保 $ 指向正确的上下文根
     if (context && context.$) {
-      // keep context.$ pointing to the original context
+      // 保持 context.$ 指向原始上下文
       finalContext.$ = context.$;
     } else if (!finalContext.$) {
       finalContext.$ = finalContext;

@@ -20,7 +20,7 @@ const OPERATORS = new Set([
   ":",
 ]);
 
-const PUNCTUATION = new Set(["(", ")", ","]);
+const PUNCTUATION = new Set(["(", ")", ",", "."]);
 
 export class Lexer {
   private input: string;
@@ -154,7 +154,7 @@ export class Lexer {
               break;
             }
           }
-          if (PUNCTUATION.has(char)) break;
+          if (PUNCTUATION.has(char) && char !== ".") break;
         }
 
         buffer += char;

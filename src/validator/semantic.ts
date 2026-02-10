@@ -5,6 +5,7 @@ import {
   LogicalExpression,
   ConditionalExpression,
   UnaryExpression,
+  MemberExpression,
   SyntaxError,
   Literal,
   JSONPathNode,
@@ -31,6 +32,9 @@ export class SemanticAnalyzer {
         break;
       case "UnaryExpression":
         this.checkUnaryExpression(node as UnaryExpression);
+        break;
+      case "MemberExpression":
+        this.checkMemberExpression(node as MemberExpression);
         break;
       // Literal and Identifier are always valid in isolation
     }
@@ -94,15 +98,18 @@ export class SemanticAnalyzer {
         break;
 
       case "DATE":
-        if (args.length > 1) {
+        if (args.length > 2) {
           throw new SyntaxError(
-            `Function 'DATE' expects 0 or 1 argument, got ${args.length}`,
+            `Function 'DATE' expects 0, 1 or 2 arguments, got ${args.length}`,
             node.start,
             0
           );
         }
-        if (args.length === 1) {
-          this.ensureLiteralType(args[0], ["String"], "DATE argument");
+        if (args.length >= 1) {
+            this.ensureLiteralType(args[0], ["String", "Integer"], "DATE first argument");
+        }
+        if (args.length === 2) {
+            this.ensureLiteralType(args[1], ["String"], "DATE second argument");
         }
         break;
 
@@ -127,8 +134,17 @@ export class SemanticAnalyzer {
 
     // Arithmetic
     if (["+", "-", "*", "/", "%", "**"].includes(op)) {
-      this.ensureLiteralType(node.left, ["Integer", "Float"], `Operator '${op}' left operand`);
-      this.ensureLiteralType(node.right, ["Integer", "Float"], `Operator '${op}' right operand`);
+      if (op === "+") {
+          // Allow String concatenation
+          // Check if both are numbers OR both are strings?
+          // Jexl allows '1' + 2 -> '12'.
+          // We can allow [Integer, Float, String] for +
+          this.ensureLiteralType(node.left, ["Integer", "Float", "String"], `Operator '${op}' left operand`);
+          this.ensureLiteralType(node.right, ["Integer", "Float", "String"], `Operator '${op}' right operand`);
+      } else {
+          this.ensureLiteralType(node.left, ["Integer", "Float"], `Operator '${op}' left operand`);
+          this.ensureLiteralType(node.right, ["Integer", "Float"], `Operator '${op}' right operand`);
+      }
     }
     // Comparison (Relational)
     else if ([">", "<", ">=", "<="].includes(op)) {
@@ -218,6 +234,10 @@ export class SemanticAnalyzer {
     if (node.operator === "!") {
       this.ensureLiteralType(node.argument, ["Boolean"], "Operator '!' operand");
     }
+  }
+
+  private checkMemberExpression(node: MemberExpression) {
+      this.analyze(node.object);
   }
 
   private ensureLiteralType(node: Node, allowedTypes: string[], context: string) {

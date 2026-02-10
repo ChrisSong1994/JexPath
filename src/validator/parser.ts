@@ -10,6 +10,7 @@ import {
   LogicalExpression,
   ConditionalExpression,
   UnaryExpression,
+  MemberExpression,
   SyntaxError,
 } from "./types.js";
 import { Lexer } from "./lexer.js";
@@ -262,7 +263,42 @@ export class Parser {
       } as UnaryExpression;
     }
 
-    return this.parsePrimary();
+    return this.parsePostfix();
+  }
+
+  private parsePostfix(): Node {
+    let node = this.parsePrimary();
+
+    while (this.check(TokenType.Punctuation, ".")) {
+      this.advance(); // consume .
+      
+      const token = this.peek();
+      if (token.type !== TokenType.Identifier) {
+           throw new SyntaxError(
+             "Expected identifier after '.'",
+             token.line,
+             token.column
+           );
+      }
+      const name = token.value as string;
+      this.advance();
+
+      const property: Identifier = {
+          type: "Identifier",
+          name,
+          start: token.start,
+          end: token.end
+      };
+
+      node = {
+          type: "MemberExpression",
+          object: node,
+          property,
+          start: node.start,
+          end: property.end
+      } as MemberExpression;
+    }
+    return node;
   }
 
   private parsePrimary(): Node {

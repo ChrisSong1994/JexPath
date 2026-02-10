@@ -122,7 +122,7 @@ describe("严格语法验证器", () => {
       expect(() => validateSyntax("SIZE()")).toThrow("Function 'SIZE' expects 1 argument");
       expect(() => validateSyntax("REPLACE('a', 'b')")).toThrow("Function 'REPLACE' expects 3 arguments");
       expect(() => validateSyntax("TRIM()")).toThrow("Function 'TRIM' expects 1 argument");
-      expect(() => validateSyntax("DATE('a', 'b')")).toThrow("Function 'DATE' expects 0 or 1 argument");
+      expect(() => validateSyntax("DATE('a', 'b', 'c')")).toThrow("Function 'DATE' expects 0, 1 or 2 arguments");
       expect(() => validateSyntax("PARSE_JSON()")).toThrow("Function 'PARSE_JSON' expects 1 argument");
     });
 
@@ -130,14 +130,14 @@ describe("严格语法验证器", () => {
       expect(() => validateSyntax("SIZE(1)")).toThrow("SIZE argument must be one of [String]");
       expect(() => validateSyntax("REPLACE(1, 'a', 'b')")).toThrow("REPLACE first argument must be one of [String]");
       expect(() => validateSyntax("TRIM(1)")).toThrow("TRIM argument must be one of [String]");
-      expect(() => validateSyntax("DATE(1)")).toThrow("DATE argument must be one of [String]");
+      expect(() => validateSyntax("DATE(true)")).toThrow("DATE first argument must be one of [String, Integer]");
       expect(() => validateSyntax("PARSE_JSON(1)")).toThrow("PARSE_JSON argument must be one of [String]");
     });
 
     it("应该拒绝不兼容的二元操作数", () => {
-      expect(() => validateSyntax("1 + 'a'")).toThrow("Operator '+' right operand must be one of [Integer, Float]");
+      expect(() => validateSyntax("1 - 'a'")).toThrow("Operator '-' right operand must be one of [Integer, Float]");
       expect(() => validateSyntax("'a' * 2")).toThrow("Operator '*' left operand must be one of [Integer, Float]");
-      expect(() => validateSyntax("true + 1")).toThrow("Operator '+' left operand must be one of [Integer, Float]");
+      expect(() => validateSyntax("true + 1")).toThrow("Operator '+' left operand must be one of [Integer, Float, String]");
       
       expect(() => validateSyntax("1 && 2")).toThrow("Operator '&&' left operand must be one of [Boolean]");
       expect(() => validateSyntax("true || 1")).toThrow("Operator '||' right operand must be one of [Boolean]");
