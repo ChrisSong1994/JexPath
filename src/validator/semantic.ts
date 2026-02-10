@@ -7,11 +7,16 @@ import {
   UnaryExpression,
   SyntaxError,
   Literal,
+  JSONPathNode,
 } from "./types.js";
+import { JSONPath } from "jsonpath-plus";
 
 export class SemanticAnalyzer {
   analyze(node: Node): void {
     switch (node.type) {
+      case "JSONPath":
+        this.checkJSONPath(node as JSONPathNode);
+        break;
       case "CallExpression":
         this.checkCallExpression(node as CallExpression);
         break;
@@ -28,6 +33,18 @@ export class SemanticAnalyzer {
         this.checkUnaryExpression(node as UnaryExpression);
         break;
       // Literal and Identifier are always valid in isolation
+    }
+  }
+
+  private checkJSONPath(node: JSONPathNode) {
+    try {
+      JSONPath.toPathArray(node.value);
+    } catch (e) {
+      throw new SyntaxError(
+        `Invalid JSONPath: ${e.message}`,
+        node.start,
+        0
+      );
     }
   }
 

@@ -52,7 +52,12 @@ export class Lexer {
         continue;
       }
 
-      if (/[a-zA-Z_$]/.test(char)) {
+      if (char === "$") {
+        tokens.push(this.readJSONPathOrIdentifier());
+        continue;
+      }
+
+      if (/[a-zA-Z_]/.test(char)) {
         tokens.push(this.readIdentifier());
         continue;
       }
@@ -94,6 +99,101 @@ export class Lexer {
     });
 
     return tokens;
+  }
+
+  private readJSONPathOrIdentifier(): Token {
+    const start = this.pos;
+    let buffer = this.input[this.pos];
+    this.consume(); // consume '$'
+
+    const nextChar = this.input[this.pos];
+
+    if (nextChar === "." || nextChar === "[") {
+      let depth = 0;
+
+      while (this.pos < this.input.length) {
+        const char = this.input[this.pos];
+
+        if (char === '"' || char === "'") {
+          const quote = char;
+          buffer += char;
+          this.consume();
+          while (this.pos < this.input.length) {
+            const c = this.input[this.pos];
+            buffer += c;
+            this.consume();
+            if (c === quote) break;
+            if (c === "\\") {
+              if (this.pos < this.input.length) {
+                buffer += this.input[this.pos];
+                this.consume();
+              }
+            }
+          }
+          continue;
+        }
+
+        if (char === "[" || char === "(") depth++;
+        if (char === "]" || char === ")") depth--;
+
+        if (depth < 0) {
+          depth++;
+          break;
+        }
+
+        if (depth === 0) {
+          if (/\s/.test(char)) break;
+          if (OPERATORS.has(char)) {
+            const lastBufferChar = buffer[buffer.length - 1];
+            if (
+              char === "*" &&
+              (lastBufferChar === "." || lastBufferChar === "[")
+            ) {
+              // allow
+            } else {
+              break;
+            }
+          }
+          if (PUNCTUATION.has(char)) break;
+        }
+
+        buffer += char;
+        this.consume();
+      }
+
+      if (depth !== 0) {
+        throw new SyntaxError(
+          "Unterminated JSONPath bracket/paren",
+          this.line,
+          this.column
+        );
+      }
+
+      return {
+        type: TokenType.JSONPath,
+        value: buffer,
+        line: this.line,
+        column: this.column,
+        start,
+        end: this.pos,
+      };
+    } else {
+      while (
+        this.pos < this.input.length &&
+        /[a-zA-Z0-9_$]/.test(this.input[this.pos])
+      ) {
+        buffer += this.input[this.pos];
+        this.consume();
+      }
+      return {
+        type: TokenType.Identifier,
+        value: buffer,
+        line: this.line,
+        column: this.column,
+        start,
+        end: this.pos,
+      };
+    }
   }
 
   private consume() {

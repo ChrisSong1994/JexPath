@@ -4,6 +4,7 @@ export enum TokenType {
   String = "String",
   Boolean = "Boolean",
   Identifier = "Identifier",
+  JSONPath = "JSONPath",
   Operator = "Operator",
   Punctuation = "Punctuation",
   EOF = "EOF",
@@ -21,6 +22,7 @@ export interface Token {
 export type NodeType =
   | "Literal"
   | "Identifier"
+  | "JSONPath"
   | "CallExpression"
   | "BinaryExpression"
   | "LogicalExpression"
@@ -42,6 +44,11 @@ export interface Literal extends Node {
 export interface Identifier extends Node {
   type: "Identifier";
   name: string;
+}
+
+export interface JSONPathNode extends Node {
+  type: "JSONPath";
+  value: string;
 }
 
 export interface CallExpression extends Node {

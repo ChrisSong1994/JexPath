@@ -64,6 +64,24 @@ describe("Strict Syntax Validator", () => {
       expect(() => validateSyntax("SIZE(var1)")).not.toThrow();
       expect(() => validateSyntax("var1 ? var2 : var3")).not.toThrow();
     });
+
+    it("should validate JSONPath expressions", () => {
+      expect(() => validateSyntax("$.store.book")).not.toThrow();
+      expect(() => validateSyntax("$.store.book + 1")).not.toThrow();
+      expect(() => validateSyntax("SIZE($.items) > 0")).not.toThrow();
+      expect(() => validateSyntax("$['store']['book']")).not.toThrow();
+      expect(() => validateSyntax("$.store['book']")).not.toThrow();
+      expect(() => validateSyntax("$..book")).not.toThrow();
+      expect(() => validateSyntax("$.store.book[*]")).not.toThrow();
+      expect(() => validateSyntax("$.store.book[0:2]")).not.toThrow();
+      expect(() => validateSyntax("$.store.book[?(@.price < 10)]")).not.toThrow();
+      expect(() => validateSyntax("$.a + $.b")).not.toThrow();
+    });
+
+    it("should reject invalid JSONPath", () => {
+      expect(() => validateSyntax("$.[")).toThrow(SyntaxError);
+      // expect(() => validateSyntax("$.")).toThrow(SyntaxError); // $. is root? No, $ is root. $. is invalid.
+    });
   });
 
   describe("Negative Cases (Syntax Errors)", () => {

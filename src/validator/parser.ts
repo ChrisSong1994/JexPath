@@ -4,6 +4,7 @@ import {
   Node,
   Literal,
   Identifier,
+  JSONPathNode,
   CallExpression,
   BinaryExpression,
   LogicalExpression,
@@ -276,6 +277,16 @@ export class Parser {
         start: token.start,
         end: token.end,
       } as Literal;
+    }
+
+    if (token.type === TokenType.JSONPath) {
+      this.advance();
+      return {
+        type: "JSONPath",
+        value: token.value as string,
+        start: token.start,
+        end: token.end,
+      } as JSONPathNode;
     }
 
     if (token.type === TokenType.Identifier) {
