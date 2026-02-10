@@ -93,15 +93,15 @@ export class Parser {
     return this.parseConditional();
   }
 
-  // condition ? trueExpr : falseExpr
+  // 条件 ? 真表达式 : 假表达式
   private parseConditional(): Node {
     const expr = this.parseLogicalOR();
 
     if (this.check(TokenType.Operator, "?")) {
       const op = this.advance();
-      const trueExpr = this.parseExpression(); // Allow nested conditionals
+      const trueExpr = this.parseExpression(); // 允许嵌套条件
       this.consumeValue(TokenType.Operator, ":", "Expected ':' in conditional expression");
-      const falseExpr = this.parseConditional(); // Right associative
+      const falseExpr = this.parseConditional(); // 右结合
 
       return {
         type: "ConditionalExpression",
@@ -235,7 +235,7 @@ export class Parser {
 
     while (this.check(TokenType.Operator, "**")) {
       const op = this.advance();
-      const right = this.parseExponentiation(); // Right associative
+      const right = this.parseExponentiation(); // 右结合
       left = {
         type: "BinaryExpression",
         operator: "**",
@@ -293,7 +293,7 @@ export class Parser {
       const name = token.value as string;
       this.advance();
 
-      // Check for Function Call
+      // 检查函数调用
       if (this.check(TokenType.Punctuation, "(")) {
         if (!ALLOWED_FUNCTIONS.has(name)) {
           throw new SyntaxError(
@@ -303,7 +303,7 @@ export class Parser {
           );
         }
 
-        this.advance(); // consume (
+        this.advance(); // 消费 (
         const args: Node[] = [];
         if (!this.check(TokenType.Punctuation, ")")) {
           do {
@@ -326,6 +326,16 @@ export class Parser {
         } as CallExpression;
       }
 
+      // 强制：属性访问必须以 '$' 开头
+      // 允许 'null' 和 'undefined' 作为标识符（实际上是字面量）
+      if (name !== "null" && name !== "undefined") {
+        throw new SyntaxError(
+            "Property access must start with '$'",
+            token.line,
+            token.column
+        );
+      }
+
       return {
         type: "Identifier",
         name,
@@ -338,15 +348,15 @@ export class Parser {
       const startToken = this.advance();
       const expr = this.parseExpression();
       const endToken = this.consumeValue(TokenType.Punctuation, ")", "Expected ')'");
-      // Preserve grouping? Jexl AST usually doesn't have GroupExpression, just structure.
-      // But for source mapping we might want it.
-      // Returning inner expr is standard for ASTs unless GroupExpression is needed.
-      // The user spec didn't list GroupExpression.
-      // I'll return the expr but maybe update start/end?
-      // Actually, AST nodes have start/end.
-      // If I return `expr`, it has its own start/end.
-      // If I want to represent `(a+b)`, I should probably return `expr` but with adjusted location?
-      // No, `(a+b)` is structurally same as `a+b`.
+      // 保留分组？Jexl AST 通常没有 GroupExpression，只有结构。
+      // 但为了源映射，我们可能需要它。
+      // 除非需要 GroupExpression，否则返回内部表达式是 AST 的标准做法。
+      // 用户规范没有列出 GroupExpression。
+      // 我将返回 expr，但可能会更新 start/end？
+      // 实际上，AST 节点有 start/end。
+      // 如果我返回 `expr`，它有自己的 start/end。
+      // 如果我想表示 `(a+b)`，我应该返回 `expr` 但调整位置吗？
+      // 不，`(a+b)` 在结构上与 `a+b` 相同。
       return expr;
     }
 

@@ -75,7 +75,7 @@ export class Lexer {
         continue;
       }
 
-      // Handle Operators
+      // 处理操作符
       const op = this.readOperator();
       if (op) {
         tokens.push(op);
@@ -104,7 +104,7 @@ export class Lexer {
   private readJSONPathOrIdentifier(): Token {
     const start = this.pos;
     let buffer = this.input[this.pos];
-    this.consume(); // consume '$'
+    this.consume(); // 消费 '$'
 
     const nextChar = this.input[this.pos];
 
@@ -149,7 +149,7 @@ export class Lexer {
               char === "*" &&
               (lastBufferChar === "." || lastBufferChar === "[")
             ) {
-              // allow
+              // 允许
             } else {
               break;
             }

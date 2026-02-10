@@ -22,6 +22,7 @@
   "scripts": {
     "dev": "npm run clean && concurrently --kill-others \"tsc --sourceMap -w\" \"tsc-alias -w\"",
     "build": "npm run clean && tsc  && tsc-alias",
+    "example": "npm run dev --prefix examples",
     "prepublish": "npm run build",
     "clean": "rimraf lib",
     "pub": "npm publish --access=public",

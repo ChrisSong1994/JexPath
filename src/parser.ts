@@ -1,3 +1,4 @@
+
 import { JSONPath } from "jsonpath-plus";
 
 /**
@@ -8,44 +9,157 @@ import { JSONPath } from "jsonpath-plus";
  */
 
 export default function expressionParser(expression: string, contextData: any): string {
-  // Logic:
-  // 1. Identify JSONPath strings (e.g. '$.store.book')
-  // 2. Resolve them using jsonpath-plus
-  // 3. Store results in temporary context variables
-  // 4. Replace JSONPath strings in expression with variable names
-  
-  // Match quoted strings starting with $ followed by . or [
-  const regex = /(['"])(\$[.\[].*?)\1/g;
-  
-  let matchIndex = 0;
+  // 逻辑:
+  // 1. 识别 JSONPath 字符串（包括带引号和不带引号的）
+  // 2. 使用 jsonpath-plus 解析它们
+  // 3. 将结果存储在临时上下文变量中
+  // 4. 用变量名替换表达式中的 JSONPath 字符串
 
-  const parsed = expression.replace(regex, (match, quote, content) => {
-    // content is the JSONPath string (e.g. "$.foo")
-    
-    // Use contextData.$ if available to avoid duplicates from context spreading
+  let result = "";
+  let pos = 0;
+  let matchIndex = 0;
+  const len = expression.length;
+
+  // 替换 JSONPath 并更新上下文的辅助函数
+  const replacePath = (path: string) => {
+    // 如果可用，使用 contextData.$ 避免上下文扩展带来的重复
     const jsonTarget = contextData.$ !== undefined ? contextData.$ : contextData;
     
-    const res = JSONPath({
-      path: content,
-      json: jsonTarget,
-      wrap: false
-    });
+    // 计算 JSONPath
+    let res;
+    try {
+        res = JSONPath({
+            path: path,
+            json: jsonTarget,
+            wrap: false
+        });
+    } catch (e) {
+        // 如果计算失败（例如路径无效），返回 undefined 或让 Jexl 失败？
+        // 最好返回 undefined 或保持原样。
+        // 但目前我们假设如果我们的解析器提取了它，它就是一个有效的路径。
+        // 但是，如果严格验证通过，应该没问题。
+        console.warn(`JSONPath evaluation failed for '${path}': ${e.message}`);
+        res = undefined;
+    }
     
-    // Unwrap single element array
+    // 解包单元素数组
     let finalRes = res;
     if (Array.isArray(res) && res.length === 1) {
       finalRes = res[0];
     }
     
-    // Inject into context
+    // 注入上下文
     const tempVarName = `__jp_${matchIndex++}`;
     contextData[tempVarName] = finalRes;
     
     return tempVarName;
-  });
+  };
 
-  // Support .replace() syntax -> | replace()
-  // const finalExpression = parsed.replace(/\.replace\(/g, ' | replace(');
+  const OPERATORS = new Set([
+    "+", "-", "*", "/", "%", "**", "==", "!=", ">", "<", ">=", "<=", "&&", "||", "!", "?", ":",
+  ]);
+  const PUNCTUATION = new Set(["(", ")", ","]);
 
-  return parsed;
+  while (pos < len) {
+    const char = expression[pos];
+
+    // 处理字符串（双引号或单引号）
+    if (char === '"' || char === "'") {
+      const start = pos;
+      const quote = char;
+      pos++; // 跳过引号
+      let content = "";
+      while (pos < len) {
+        const c = expression[pos];
+        if (c === quote) {
+          pos++; // 跳过闭合引号
+          break;
+        }
+        if (c === '\\' && pos + 1 < len && expression[pos+1] === quote) {
+          content += quote;
+          pos += 2;
+          continue;
+        }
+        content += c;
+        pos++;
+      }
+      
+      // 检查内容是否像 JSONPath（以 $ 开头并且包含 . 或 [）
+      // 保持对带引号的 JSONPaths 的向后兼容性
+      if (content.startsWith("$.") || content.startsWith("$[")) {
+          result += replacePath(content);
+      } else {
+          // 保留原始字符串（包括引号）
+          result += expression.slice(start, pos);
+      }
+      continue;
+    }
+
+    // 处理未加引号的 JSONPath
+    if (char === '$') {
+       const next = pos + 1 < len ? expression[pos+1] : '';
+       if (next === '.' || next === '[') {
+           // 消费 JSONPath
+           const start = pos;
+           let depth = 0;
+           let buffer = "$";
+           pos++; // 消费了 $
+
+           while (pos < len) {
+               const c = expression[pos];
+               
+               // 处理 JSONPath 内部的字符串（例如 ['foo']）
+               if (c === '"' || c === "'") {
+                   const quote = c;
+                   buffer += c;
+                   pos++;
+                   while (pos < len) {
+                       const sc = expression[pos];
+                       buffer += sc;
+                       pos++;
+                       if (sc === quote) break;
+                       if (sc === '\\' && pos < len) {
+                           buffer += expression[pos];
+                           pos++;
+                       }
+                   }
+                   continue;
+               }
+               
+               if (c === '[' || c === '(') depth++;
+               if (c === ']' || c === ')') depth--;
+               
+               if (depth < 0) {
+                   depth++; // 恢复
+                   break;
+               }
+               
+               if (depth === 0) {
+                   if (/\s/.test(c)) break;
+                   if (PUNCTUATION.has(c)) break;
+                   if (OPERATORS.has(c)) {
+                       const lastBufferChar = buffer[buffer.length - 1];
+                       if (c === "*" && (lastBufferChar === "." || lastBufferChar === "[")) {
+                           // 允许
+                       } else {
+                           break;
+                       }
+                   }
+               }
+               
+               buffer += c;
+               pos++;
+           }
+           
+           result += replacePath(buffer);
+           continue;
+       }
+    }
+    
+    // 仅追加字符
+    result += char;
+    pos++;
+  }
+  
+  return result;
 }
