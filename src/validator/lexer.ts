@@ -241,12 +241,12 @@ export class Lexer {
     const start = this.pos;
     const startCol = this.column;
     let value = "";
-    this.consume(); // Skip opening quote
+    this.consume(); // 跳过开头的引号
 
     while (this.pos < this.input.length) {
       const char = this.input[this.pos];
       if (char === quote) {
-        this.consume(); // Skip closing quote
+        this.consume(); // 跳过结尾的引号
         return {
           type: TokenType.String,
           value,
@@ -257,10 +257,10 @@ export class Lexer {
         };
       }
       
-      // Handle escaped quotes
+      // 处理转义引号
       if (char === "\\" && this.input[this.pos + 1] === quote) {
-          this.consume(); // Skip backslash
-          value += this.input[this.pos]; // Add quote
+          this.consume(); // 跳过反斜杠
+          value += this.input[this.pos]; // 添加引号
           this.consume(); 
           continue;
       }
@@ -312,7 +312,7 @@ export class Lexer {
     const start = this.pos;
     const startCol = this.column;
 
-    // Check 2-char operators first
+    // 优先检查 2 个字符的操作符
     if (this.pos + 1 < this.input.length) {
       const twoChar = this.input.substring(this.pos, this.pos + 2);
       if (OPERATORS.has(twoChar)) {
@@ -329,7 +329,7 @@ export class Lexer {
       }
     }
 
-    // Check 1-char operators
+    // 检查 1 个字符的操作符
     const char = this.input[this.pos];
     if (OPERATORS.has(char)) {
       this.consume();

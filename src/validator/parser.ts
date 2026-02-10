@@ -23,23 +23,6 @@ const ALLOWED_FUNCTIONS = new Set([
   "PARSE_JSON",
 ]);
 
-const ALLOWED_BINARY_OPS = new Set([
-  "+",
-  "-",
-  "*",
-  "/",
-  "%",
-  "**",
-  "==",
-  "!=",
-  ">",
-  "<",
-  ">=",
-  "<=",
-]);
-
-const ALLOWED_LOGICAL_OPS = new Set(["&&", "||"]);
-
 export class Parser {
   private tokens: Token[];
   private pos: number = 0;
@@ -49,8 +32,10 @@ export class Parser {
     this.tokens = lexer.tokenize();
   }
 
+  // 解析入口：开始解析表达式
   parse(): Node {
     const node = this.parseExpression();
+    // 确保解析完表达式后没有剩余的 token
     if (!this.isAtEnd()) {
       throw new SyntaxError(
         "Unexpected token after expression",
@@ -61,18 +46,22 @@ export class Parser {
     return node;
   }
 
+  // 查看当前 token，不移动指针
   private peek(): Token {
     return this.tokens[this.pos];
   }
 
+  // 消费当前 token 并移动指针
   private advance(): Token {
     return this.tokens[this.pos++];
   }
 
+  // 检查是否到达文件末尾
   private isAtEnd(): boolean {
     return this.peek().type === TokenType.EOF;
   }
 
+  // 检查当前 token 类型和值是否匹配
   private check(type: TokenType, value?: string): boolean {
     if (this.isAtEnd()) return false;
     const token = this.peek();
@@ -81,6 +70,7 @@ export class Parser {
     return true;
   }
 
+  // 消费指定类型的 token，如果匹配失败则抛出错误
   private consumeValue(type: TokenType, value: string, message: string): Token {
     if (this.check(type, value)) return this.advance();
     throw new SyntaxError(
@@ -90,11 +80,13 @@ export class Parser {
     );
   }
 
+  // 解析表达式（优先级最低）
   private parseExpression(): Node {
     return this.parseConditional();
   }
 
-  // 条件 ? 真表达式 : 假表达式
+  // 解析条件表达式 (条件 ? 真值 : 假值)
+  // 优先级：低于逻辑或
   private parseConditional(): Node {
     const expr = this.parseLogicalOR();
 
@@ -117,6 +109,8 @@ export class Parser {
     return expr;
   }
 
+  // 解析逻辑或 (||)
+  // 优先级：低于逻辑与
   private parseLogicalOR(): Node {
     let left = this.parseLogicalAND();
 
@@ -136,6 +130,8 @@ export class Parser {
     return left;
   }
 
+  // 解析逻辑与 (&&)
+  // 优先级：低于相等比较
   private parseLogicalAND(): Node {
     let left = this.parseEquality();
 
@@ -155,6 +151,8 @@ export class Parser {
     return left;
   }
 
+  // 解析相等比较 (==, !=)
+  // 优先级：低于关系比较
   private parseEquality(): Node {
     let left = this.parseRelational();
 
@@ -174,6 +172,8 @@ export class Parser {
     return left;
   }
 
+  // 解析关系比较 (>, <, >=, <=)
+  // 优先级：低于加减法
   private parseRelational(): Node {
     let left = this.parseAdditive();
 
@@ -193,6 +193,8 @@ export class Parser {
     return left;
   }
 
+  // 解析加减法 (+, -)
+  // 优先级：低于乘除法
   private parseAdditive(): Node {
     let left = this.parseMultiplicative();
 
@@ -212,6 +214,8 @@ export class Parser {
     return left;
   }
 
+  // 解析乘除法 (*, /, %)
+  // 优先级：低于指数运算
   private parseMultiplicative(): Node {
     let left = this.parseExponentiation();
 
@@ -231,6 +235,8 @@ export class Parser {
     return left;
   }
 
+  // 解析指数运算 (**)
+  // 优先级：低于一元运算
   private parseExponentiation(): Node {
     let left = this.parseUnary();
 
@@ -250,6 +256,8 @@ export class Parser {
     return left;
   }
 
+  // 解析一元运算 (!)
+  // 优先级：低于后置运算（成员访问）
   private parseUnary(): Node {
     if (this.check(TokenType.Operator, "!")) {
       const op = this.advance();
@@ -266,6 +274,8 @@ export class Parser {
     return this.parsePostfix();
   }
 
+  // 解析后置运算 (成员访问 .)
+  // 优先级：低于基本元素（字面量、标识符、分组）
   private parsePostfix(): Node {
     let node = this.parsePrimary();
 
@@ -301,9 +311,11 @@ export class Parser {
     return node;
   }
 
+  // 解析基本元素 (字面量, 标识符, 分组表达式, JSONPath)
   private parsePrimary(): Node {
     const token = this.peek();
 
+    // 字面量处理
     if (token.type === TokenType.Integer || token.type === TokenType.Float || token.type === TokenType.String || token.type === TokenType.Boolean) {
       this.advance();
       return {
@@ -315,6 +327,7 @@ export class Parser {
       } as Literal;
     }
 
+    // JSONPath 处理
     if (token.type === TokenType.JSONPath) {
       this.advance();
       return {
@@ -325,6 +338,7 @@ export class Parser {
       } as JSONPathNode;
     }
 
+    // 标识符处理 (变量或函数调用)
     if (token.type === TokenType.Identifier) {
       const name = token.value as string;
       this.advance();
@@ -380,19 +394,11 @@ export class Parser {
       } as Identifier;
     }
 
+    // 分组表达式 (...)
     if (this.check(TokenType.Punctuation, "(")) {
       const startToken = this.advance();
       const expr = this.parseExpression();
       const endToken = this.consumeValue(TokenType.Punctuation, ")", "Expected ')'");
-      // 保留分组？Jexl AST 通常没有 GroupExpression，只有结构。
-      // 但为了源映射，我们可能需要它。
-      // 除非需要 GroupExpression，否则返回内部表达式是 AST 的标准做法。
-      // 用户规范没有列出 GroupExpression。
-      // 我将返回 expr，但可能会更新 start/end？
-      // 实际上，AST 节点有 start/end。
-      // 如果我返回 `expr`，它有自己的 start/end。
-      // 如果我想表示 `(a+b)`，我应该返回 `expr` 但调整位置吗？
-      // 不，`(a+b)` 在结构上与 `a+b` 相同。
       return expr;
     }
 

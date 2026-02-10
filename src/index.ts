@@ -37,7 +37,7 @@ export default class JexPath {
     try {
       validateSyntax(expression);
       return true;
-    } catch (e) {
+    } catch {
       return false;
     }
   }

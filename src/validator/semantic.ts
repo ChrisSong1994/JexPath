@@ -56,7 +56,7 @@ export class SemanticAnalyzer {
     const name = node.callee.name;
     const args = node.arguments;
 
-    // Check arguments recursively
+    // 递归检查参数
     args.forEach((arg) => this.analyze(arg));
 
     switch (name) {
@@ -68,8 +68,8 @@ export class SemanticAnalyzer {
             0
           );
         }
-        // Argument can be String or Array (Variable).
-        // Since Array Literal is not supported, if Literal, must be String.
+        // 参数可以是字符串或数组（变量）。
+        // 由于不支持数组字面量，如果是字面量，必须是字符串。
         this.ensureLiteralType(args[0], ["String"], "SIZE argument");
         break;
 
@@ -132,13 +132,13 @@ export class SemanticAnalyzer {
 
     const op = node.operator;
 
-    // Arithmetic
+    // 算术运算
     if (["+", "-", "*", "/", "%", "**"].includes(op)) {
       if (op === "+") {
-          // Allow String concatenation
-          // Check if both are numbers OR both are strings?
-          // Jexl allows '1' + 2 -> '12'.
-          // We can allow [Integer, Float, String] for +
+          // 允许字符串拼接
+          // 检查是否都是数字 或者 都是字符串？
+          // Jexl 允许 '1' + 2 -> '12'.
+          // 我们允许 [Integer, Float, String] 用于 +
           this.ensureLiteralType(node.left, ["Integer", "Float", "String"], `Operator '${op}' left operand`);
           this.ensureLiteralType(node.right, ["Integer", "Float", "String"], `Operator '${op}' right operand`);
       } else {
@@ -146,15 +146,15 @@ export class SemanticAnalyzer {
           this.ensureLiteralType(node.right, ["Integer", "Float"], `Operator '${op}' right operand`);
       }
     }
-    // Comparison (Relational)
+    // 比较运算 (关系)
     else if ([">", "<", ">=", "<="].includes(op)) {
-      // Must be both numbers or both strings.
-      // If one is variable, we check the other.
+      // 必须都是数字或都是字符串。
+      // 如果一个是变量，我们检查另一个。
       const leftType = this.getLiteralType(node.left);
       const rightType = this.getLiteralType(node.right);
 
       if (leftType && rightType) {
-        // Both literals
+        // 都是字面量
         const leftIsNum = leftType === "Integer" || leftType === "Float";
         const rightIsNum = rightType === "Integer" || rightType === "Float";
         const leftIsStr = leftType === "String";
@@ -169,7 +169,7 @@ export class SemanticAnalyzer {
           0
         );
       } else if (leftType) {
-        // Left is literal, Right is variable
+        // 左边是字面量，右边是变量
         if (leftType === "Boolean") {
            throw new SyntaxError(
             `Operator '${op}' cannot be applied to Boolean`,
@@ -178,7 +178,7 @@ export class SemanticAnalyzer {
           );
         }
       } else if (rightType) {
-        // Right is literal
+        // 右边是字面量
         if (rightType === "Boolean") {
            throw new SyntaxError(
             `Operator '${op}' cannot be applied to Boolean`,
@@ -188,9 +188,9 @@ export class SemanticAnalyzer {
         }
       }
     }
-    // Equality (==, !=) - compatible with anything?
-    // User said: "Binary operators left/right type compatible (num-num, str-str, bool-bool)".
-    // This implies we shouldn't compare Num == Str.
+    // 相等运算 (==, !=) - 兼容任何类型？
+    // 用户说："二元运算符左右类型兼容 (num-num, str-str, bool-bool)".
+    // 这意味着我们不应该比较 Num == Str.
     else if (["==", "!="].includes(op)) {
        const leftType = this.getLiteralType(node.left);
        const rightType = this.getLiteralType(node.right);
@@ -214,7 +214,7 @@ export class SemanticAnalyzer {
     this.analyze(node.left);
     this.analyze(node.right);
 
-    // &&, || expect Boolean
+    // &&, || 期望布尔值
     this.ensureLiteralType(node.left, ["Boolean"], `Operator '${node.operator}' left operand`);
     this.ensureLiteralType(node.right, ["Boolean"], `Operator '${node.operator}' right operand`);
   }
@@ -224,7 +224,7 @@ export class SemanticAnalyzer {
     this.analyze(node.consequent);
     this.analyze(node.alternate);
 
-    // Test must be Boolean
+    // 测试条件必须是布尔值
     this.ensureLiteralType(node.test, ["Boolean"], "Conditional test");
   }
 
@@ -241,19 +241,19 @@ export class SemanticAnalyzer {
   }
 
   private ensureLiteralType(node: Node, allowedTypes: string[], context: string) {
-    if (node.type !== "Literal") return; // Skip if not literal (assume variable is correct)
+    if (node.type !== "Literal") return; // 如果不是字面量则跳过（假设变量是正确的）
 
     const literal = node as Literal;
-    // Determine type from value
+    // 从值确定类型
     let type = "";
     if (typeof literal.value === "number") {
-       // Is it Float or Integer? Lexer distinguishes, but here we have value.
-       // Actually Lexer sets Token type. Parser sets Literal value.
-       // My Literal interface doesn't store sub-type (Integer/Float).
-       // But I can infer from value or just treat as Number.
-       // My `allowedTypes` uses "Integer", "Float".
-       // I should probably unify to "Number".
-       // But my `getLiteralType` below will try to return specific.
+       // 是 Float 还是 Integer？Lexer 区分了，但这里只有值。
+       // 实际上 Lexer 设置 Token 类型。Parser 设置 Literal 值。
+       // 我的 Literal 接口没有存储子类型 (Integer/Float)。
+       // 但我可以从值推断，或者直接视为 Number。
+       // 我的 `allowedTypes` 使用 "Integer", "Float"。
+       // 我应该统一为 "Number"。
+       // 但下面的 `getLiteralType` 会尝试返回具体的。
        type = Number.isInteger(literal.value) ? "Integer" : "Float";
     } else if (typeof literal.value === "string") {
       type = "String";
@@ -261,7 +261,7 @@ export class SemanticAnalyzer {
       type = "Boolean";
     }
 
-    // Check match based on groups
+    // 基于组检查匹配
     const allowedGroups = allowedTypes.map(t => this.getTypeGroup(t));
     const actualGroup = this.getTypeGroup(type);
     
