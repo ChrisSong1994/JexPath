@@ -45,7 +45,7 @@ export default function expressionParser(expression: string, contextData: any): 
   });
 
   // Support .replace() syntax -> | replace()
-  const finalExpression = parsed.replace(/\.replace\(/g, ' | replace(');
+  // const finalExpression = parsed.replace(/\.replace\(/g, ' | replace(');
 
-  return finalExpression;
+  return parsed;
 }

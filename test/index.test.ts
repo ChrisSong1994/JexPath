@@ -54,4 +54,14 @@ describe("表达式计算引擎", () => {
     // 2023-01-01
     expect(result).toBe("2023-01-01");
   });
+
+  it("validate 方法测试", () => {
+    // 合法
+    expect(myEngine.validate("1 + 1")).toBe(true);
+    expect(myEngine.validate("SIZE('abc') > 0")).toBe(true);
+    
+    // 非法语法
+    expect(myEngine.validate("1 +")).toBe(false);
+    expect(myEngine.validate("UNKNOWN()")).toBe(false);
+  });
 });

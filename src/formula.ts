@@ -75,8 +75,8 @@ export default function registerFormulas(
   }
 
   // Built-in transforms
-  jexl.addTransform("replace", replace);
-  jexl.addTransform("size", size);
-  jexl.addTransform("length", size); // Alias for size
-  jexl.addTransform("trim", trim);
+  // jexl.addTransform("replace", replace);
+  // jexl.addTransform("size", size);
+  // jexl.addTransform("length", size); // Alias for size
+  // jexl.addTransform("trim", trim);
 }

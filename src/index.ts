@@ -7,10 +7,13 @@
 import Jexl from "jexl";
 import expressionParser from "./parser";
 import registerFormulas from "./formula";
+import { validateSyntax } from "./validator/index.js";
+
+export { validateSyntax } from "./validator/index.js";
 
 export default class JexPath {
   private contextData: any;
-  private engine: any; 
+  private engine: any;
 
   constructor(
     contextData: any,
@@ -22,6 +25,21 @@ export default class JexPath {
     this.contextData = contextData;
     this.engine = new Jexl.Jexl();
     registerFormulas(this.engine, options);
+  }
+
+
+  /**
+   * 验证表达式语法
+   * @param expression 表达式字符串
+   * @returns 是否语法有效
+   */
+  validate(expression: string): boolean {
+    try {
+      validateSyntax(expression);
+      return true;
+    } catch (e) {
+      return false;
+    }
   }
 
   /**
