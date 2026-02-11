@@ -9,38 +9,62 @@ const { Header, Content } = Layout
 const { Title, Text, Paragraph } = Typography
 
 const initialJson = JSON.stringify({
-  users: [
-    { name: "John", age: 30, active: true },
-    { name: "Jane", age: 25, active: false },
-    { name: "Bob", age: 35, active: true }
-  ],
   store: {
+    name: "Tech & Read Store",
+    location: "New York",
+    isOpen: true,
     book: [
-      { category: "reference", author: "Nigel Rees", title: "Sayings of the Century", price: 8.95 },
-      { category: "fiction", author: "Evelyn Waugh", title: "Sword of Honour", price: 12.99 },
-      { category: "fiction", author: "Herman Melville", title: "Moby Dick", isbn: "0-553-21311-3", price: 8.99 },
-      { category: "fiction", author: "J. R. R. Tolkien", title: "The Lord of the Rings", isbn: "0-395-19395-8", price: 22.99 }
+      { category: "reference", author: "Nigel Rees", title: "Sayings of the Century", price: 8.95, inStock: true },
+      { category: "fiction", author: "Evelyn Waugh", title: "Sword of Honour", price: 12.99, inStock: false },
+      { category: "fiction", author: "Herman Melville", title: "Moby Dick", isbn: "0-553-21311-3", price: 8.99, inStock: true },
+      { category: "fiction", author: "J. R. R. Tolkien", title: "The Lord of the Rings", isbn: "0-395-19395-8", price: 22.99, inStock: true }
     ],
     bicycle: {
       color: "red",
-      price: 19.95
-    }
+      price: 19.95,
+      features: ["lights", "bell"]
+    },
+    electronics: [
+       { id: "e1", name: "Laptop", price: 999.99, tags: ["work", "tech"], specs: { ram: "16GB", storage: "512GB" } },
+       { id: "e2", name: "Smartphone", price: 699.00, tags: ["tech", "mobile"], specs: { ram: "8GB", storage: "128GB" } }
+    ],
+    hardware: [
+      { name: "Hammer", price: 15.00, weight: 1.5 },
+      { name: "Drill", price: 85.00, weight: 2.2 }
+    ]
+  },
+  users: [
+    { id: "u1", name: "John", age: 30, active: true, roles: ["admin", "editor"], meta: "{\"lastLogin\": \"2023-10-01\"}" },
+    { id: "u2", name: "Jane", age: 25, active: false, roles: ["viewer"], meta: "{\"lastLogin\": \"2023-09-15\"}" }
+  ],
+  orders: [
+    { id: "o1", userId: "u1", items: [{ productId: "e1", qty: 1 }, { productId: "b1", qty: 2 }], total: 1050.00, status: "shipped" },
+    { id: "o2", userId: "u2", items: [{ productId: "b2", qty: 1 }], total: 12.99, status: "pending" }
+  ],
+  stats: {
+    visits: 1024,
+    rating: 4.5
+  },
+  system: {
+    version: "1.0.0",
+    maintenanceWindow: { start: "2023-12-01T00:00:00Z", end: "2023-12-01T04:00:00Z" }
   }
 }, null, 2)
 
-const initialExpression = "$.store.book[?(@.price < 10)].title"
+const initialExpression = "$.store.book[?(@.price < 10 && @.inStock == true)].title"
 
 const examples = [
   { label: "所有书籍", value: "$.store.book[*]" },
-  { label: "第一本书", value: "$.store.book[0]" },
-  { label: "价格 < 10 的书", value: "$.store.book[?(@.price < 10)]" },
-  { label: "所有书名", value: "$.store.book[*].title" },
-  { label: "书的数量", value: "SIZE($.store.book)" },
-  { label: "替换字符串", value: "REPLACE('Hello World', 'World', 'JexPath')" },
-  { label: "日期格式化", value: "DATE('2023-01-01', 'YYYY/MM/DD')" },
-  { label: "JSON 解析", value: "PARSE_JSON('{\"a\":1}').a" },
-  { label: "算术运算", value: "1 + 2 * 3" },
-  { label: "逻辑运算", value: "true && false || true" },
+  { label: "有库存的便宜书", value: "$.store.book[?(@.price < 10 && @.inStock == true)].title" },
+  { label: "高价电子产品", value: "$.store.electronics[?(@.price > 800)]" },
+  { label: "嵌套属性(内存)", value: "$.store.electronics[0].specs.ram" },
+  { label: "订单过滤(Shipped)", value: "$.orders[?(@.status == 'shipped')].id" },
+  { label: "打折计算", value: "$.store.bicycle.price * 0.9" },
+  { label: "字符串拼接", value: "$.store.name + ' (' + $.store.location + ')'" },
+  { label: "JSON 解析", value: "PARSE_JSON($.users[0].meta).lastLogin" },
+  { label: "三元运算", value: "$.stats.visits > 1000 ? 'Popular' : 'Normal'" },
+  { label: "日期格式化", value: "DATE($.system.maintenanceWindow.start, 'YYYY-MM-DD HH:mm')" },
+  { label: "复杂逻辑", value: "$.users[0].active && $.users[0].roles[0] == 'admin'" },
 ];
 
 function App() {
