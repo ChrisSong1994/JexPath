@@ -5,6 +5,7 @@
     "lib": ["ESNext", "dom", "dom.iterable"],
     "moduleResolution": "node",
     "declaration": true, 
+    "sourceMap": true,
     "rootDir": "src",
     "outDir": "lib",
     "useDefineForClassFields": false,

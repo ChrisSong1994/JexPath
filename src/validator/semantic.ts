@@ -210,6 +210,7 @@ export class SemanticAnalyzer {
     }
   }
 
+  // 检查逻辑表达式（&&, ||）
   private checkLogicalExpression(node: LogicalExpression) {
     this.analyze(node.left);
     this.analyze(node.right);
@@ -219,6 +220,7 @@ export class SemanticAnalyzer {
     this.ensureLiteralType(node.right, ["Boolean"], `Operator '${node.operator}' right operand`);
   }
 
+  // 检查条件表达式（?:）
   private checkConditionalExpression(node: ConditionalExpression) {
     this.analyze(node.test);
     this.analyze(node.consequent);
@@ -228,6 +230,7 @@ export class SemanticAnalyzer {
     this.ensureLiteralType(node.test, ["Boolean"], "Conditional test");
   }
 
+  // 检查一元表达式（!）
   private checkUnaryExpression(node: UnaryExpression) {
     this.analyze(node.argument);
 
@@ -236,10 +239,12 @@ export class SemanticAnalyzer {
     }
   }
 
+  // 检查成员表达式（对象.属性）
   private checkMemberExpression(node: MemberExpression) {
       this.analyze(node.object);
   }
 
+  // 检查节点是否是允许的字面量类型
   private ensureLiteralType(node: Node, allowedTypes: string[], context: string) {
     if (node.type !== "Literal") return; // 如果不是字面量则跳过（假设变量是正确的）
 

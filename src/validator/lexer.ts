@@ -109,6 +109,7 @@ export class Lexer {
       );
     }
 
+    // 结束标记
     tokens.push({
       type: TokenType.EOF,
       value: "EOF",
@@ -121,6 +122,7 @@ export class Lexer {
     return tokens;
   }
 
+  // 读取 JSONPath 或标识符（变量名或关键字）
   private readJSONPathOrIdentifier(): Token {
     const start = this.pos;
     let buffer = this.input[this.pos];
@@ -216,6 +218,7 @@ export class Lexer {
     }
   }
 
+  // 读取正则表达式（/pattern/flags）
   private readRegex(): Token {
     const start = this.pos;
     let buffer = this.input[this.pos]; // /
@@ -280,6 +283,7 @@ export class Lexer {
     );
   }
 
+  // 消费字符（更新行号、列号、位置指针）
   private consume() {
     if (this.input[this.pos] === "\n") {
       this.line++;
@@ -290,6 +294,7 @@ export class Lexer {
     this.pos++;
   }
 
+  // 读取数字（整数或浮点数）
   private readNumber(): Token {
     const start = this.pos;
     const startCol = this.column;
@@ -321,6 +326,7 @@ export class Lexer {
     };
   }
 
+  // 读取字符串（单引号或双引号）
   private readString(quote: string): Token {
     const start = this.pos;
     const startCol = this.column;
@@ -356,6 +362,7 @@ export class Lexer {
     throw new SyntaxError("Unterminated string literal", this.line, this.column);
   }
 
+  // 读取标识符（变量名或关键字）
   private readIdentifier(): Token {
     const start = this.pos;
     const startCol = this.column;
@@ -392,6 +399,7 @@ export class Lexer {
     };
   }
 
+  // 读取操作符（+、-、*、/、%、==、!=、<、<=、>、>=、&&、||）
   private readOperator(): Token | null {
     const start = this.pos;
     const startCol = this.column;
