@@ -19,11 +19,11 @@ function size(val: any[] | string) {
 /**
  * 替换字符串中的子字符串
  * @param str 原始字符串
- * @param search 要搜索的子字符串
+ * @param search 要搜索的子字符串或正则表达式
  * @param replace 替换的子字符串
  * @returns 替换后的字符串
  */
-function replace(str: string, search: string, replace: string) {
+function replace(str: string, search: string | RegExp, replace: string) {
   if (typeof str === "string") {
     return str.replace(search, replace);
   }

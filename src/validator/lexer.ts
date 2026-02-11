@@ -57,6 +57,26 @@ export class Lexer {
         continue;
       }
 
+      // Check for Regex
+      if (char === "/") {
+        const lastToken = tokens.length > 0 ? tokens[tokens.length - 1] : null;
+        let isRegex = false;
+        if (!lastToken) {
+          isRegex = true;
+        } else if (lastToken.type === TokenType.Operator) {
+          isRegex = true;
+        } else if (lastToken.type === TokenType.Punctuation) {
+          if (lastToken.value !== ")" && lastToken.value !== "]") {
+            isRegex = true;
+          }
+        }
+
+        if (isRegex) {
+          tokens.push(this.readRegex());
+          continue;
+        }
+      }
+
       if (/[a-zA-Z_]/.test(char)) {
         tokens.push(this.readIdentifier());
         continue;
@@ -194,6 +214,70 @@ export class Lexer {
         end: this.pos,
       };
     }
+  }
+
+  private readRegex(): Token {
+    const start = this.pos;
+    let buffer = this.input[this.pos]; // /
+    this.consume();
+
+    let inClass = false; // [...]
+    let escaped = false;
+
+    while (this.pos < this.input.length) {
+      const char = this.input[this.pos];
+      buffer += char;
+      this.consume();
+
+      if (escaped) {
+        escaped = false;
+        continue;
+      }
+
+      if (char === "\\") {
+        escaped = true;
+        continue;
+      }
+
+      if (inClass) {
+        if (char === "]") {
+          inClass = false;
+        }
+        continue;
+      }
+
+      if (char === "[") {
+        inClass = true;
+        continue;
+      }
+
+      if (char === "/") {
+        // End of regex
+        // Check flags
+        while (
+          this.pos < this.input.length &&
+          /[a-z]/.test(this.input[this.pos])
+        ) {
+          buffer += this.input[this.pos];
+          this.consume();
+        }
+
+        return {
+          type: TokenType.Regex,
+          value: buffer,
+          line: this.line,
+          column: this.column,
+          start: start,
+          end: this.pos,
+        };
+      }
+    }
+
+    throw new SyntaxError(
+      "Unterminated regular expression",
+      this.line,
+      this.column
+    );
   }
 
   private consume() {

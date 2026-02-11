@@ -338,6 +338,18 @@ export class Parser {
       } as JSONPathNode;
     }
 
+    // 正则表达式处理
+    if (token.type === TokenType.Regex) {
+      this.advance();
+      return {
+        type: "Literal",
+        value: token.value,
+        raw: token.value as string,
+        start: token.start,
+        end: token.end,
+      } as Literal;
+    }
+
     // 标识符处理 (变量或函数调用)
     if (token.type === TokenType.Identifier) {
       const name = token.value as string;

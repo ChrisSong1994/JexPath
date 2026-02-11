@@ -18,6 +18,7 @@ export default function expressionParser(expression: string, contextData: any): 
   let result = "";
   let pos = 0;
   let matchIndex = 0;
+  let regexMatchIndex = 0;
   const len = expression.length;
 
   // 替换 JSONPath 并更新上下文的辅助函数
@@ -53,6 +54,22 @@ export default function expressionParser(expression: string, contextData: any): 
     contextData[tempVarName] = finalRes;
     
     return tempVarName;
+  };
+
+  const replaceRegex = (regexStr: string) => {
+    try {
+      const lastSlash = regexStr.lastIndexOf("/");
+      const pattern = regexStr.slice(1, lastSlash);
+      const flags = regexStr.slice(lastSlash + 1);
+      const regexObj = new RegExp(pattern, flags);
+
+      const tempVarName = `__regex_${regexMatchIndex++}`;
+      contextData[tempVarName] = regexObj;
+      return tempVarName;
+    } catch (e) {
+      console.warn(`Invalid regex '${regexStr}': ${e.message}`);
+      return regexStr; // fallback
+    }
   };
 
   const OPERATORS = new Set([
@@ -93,6 +110,88 @@ export default function expressionParser(expression: string, contextData: any): 
           result += expression.slice(start, pos);
       }
       continue;
+    }
+
+    // 处理正则表达式
+    if (char === "/") {
+      let i = pos - 1;
+      while (i >= 0 && /\s/.test(expression[i])) {
+        i--;
+      }
+
+      let isRegex = false;
+      if (i < 0) {
+        isRegex = true;
+      } else {
+        const lastChar = expression[i];
+        if (OPERATORS.has(lastChar) || PUNCTUATION.has(lastChar)) {
+          if (lastChar !== ")" && lastChar !== "]") {
+            isRegex = true;
+          }
+        } else if (["(", ",", "!", ":"].includes(lastChar)) {
+          isRegex = true;
+        } else {
+          // 检查关键字 (如 in)
+          if (/[a-zA-Z0-9_$]/.test(lastChar)) {
+            let j = i;
+            while (j >= 0 && /[a-zA-Z0-9_$]/.test(expression[j])) {
+              j--;
+            }
+            const word = expression.slice(j + 1, i + 1);
+            if (["in", "return", "typeof", "yield"].includes(word)) {
+              isRegex = true;
+            }
+          }
+        }
+      }
+
+      if (isRegex) {
+        let tempPos = pos + 1; // skip /
+        let inClass = false;
+        let escaped = false;
+        let found = false;
+
+        while (tempPos < len) {
+          const c = expression[tempPos];
+          if (escaped) {
+            escaped = false;
+            tempPos++;
+            continue;
+          }
+          if (c === "\\") {
+            escaped = true;
+            tempPos++;
+            continue;
+          }
+          if (inClass) {
+            if (c === "]") inClass = false;
+            tempPos++;
+            continue;
+          }
+          if (c === "[") {
+            inClass = true;
+            tempPos++;
+            continue;
+          }
+          if (c === "/") {
+            tempPos++; // skip /
+            // flags
+            while (tempPos < len && /[a-z]/.test(expression[tempPos])) {
+              tempPos++;
+            }
+            found = true;
+            break;
+          }
+          tempPos++;
+        }
+
+        if (found) {
+          const regexStr = expression.slice(pos, tempPos);
+          result += replaceRegex(regexStr);
+          pos = tempPos;
+          continue;
+        }
+      }
     }
 
     // 处理未加引号的 JSONPath

@@ -6,9 +6,4 @@ import path from 'path'
 export default defineConfig({
   base: './',
   plugins: [react()],
-  resolve: {
-    alias: {
-      '@fett/jexpath': path.resolve(__dirname, '../src/index.ts'),
-    },
-  },
 })

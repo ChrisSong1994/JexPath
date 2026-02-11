@@ -27,9 +27,6 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
     "baseUrl": ".",
-    "paths": {
-      "@fett/jexpath": ["../src/index.ts"]
-    }
   },
   "include": ["src"]
 }

@@ -5,6 +5,7 @@ export enum TokenType {
   Boolean = "Boolean", // 布尔值
   Identifier = "Identifier", // 标识符
   JSONPath = "JSONPath", // JSONPath 表达式
+  Regex = "Regex", // 正则表达式
   Operator = "Operator", // 运算符
   Punctuation = "Punctuation", // 标点符号
   EOF = "EOF", // 文件结束

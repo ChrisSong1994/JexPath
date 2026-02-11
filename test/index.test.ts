@@ -47,6 +47,12 @@ describe("表达式计算引擎", () => {
     expect(result).toBe("100");
   });
 
+  it("正则替换", async () => {
+    const result = await myEngine.run("REPLACE($.c, /\\s+\\$/, ' RMB')");
+    // "100 $" -> "100 RMB"
+    expect(result).toBe("100 RMB");
+  });
+
   // 时间格式
   it("时间格式", async () => {
     // 逻辑：将 timestamp 转换为日期字符串

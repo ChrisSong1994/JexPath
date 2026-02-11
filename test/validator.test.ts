@@ -59,6 +59,12 @@ describe("严格语法验证器", () => {
       expect(() => validateSyntax("PARSE_JSON('{}')")).not.toThrow();
     });
     
+    it("应该验证正则表达式", () => {
+      expect(() => validateSyntax("REPLACE('a', /a/, 'b')")).not.toThrow();
+      expect(() => validateSyntax("REPLACE('a', /a/g, 'b')")).not.toThrow();
+      expect(() => validateSyntax("REPLACE('a', /\\s+/, 'b')")).not.toThrow();
+    });
+
     it("应该拒绝非函数调用的标识符（变量）", () => {
       expect(() => validateSyntax("var1 + 1")).toThrow("Property access must start with '$'");
       expect(() => validateSyntax("SIZE(var1)")).toThrow("Property access must start with '$'");
