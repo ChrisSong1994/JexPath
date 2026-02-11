@@ -15,23 +15,29 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+          cache: 'pnpm'
 
       # 安装根目录依赖并构建，因为 examples 依赖根目录
       - name: Install Root Dependencies & Build
         run: |
-          npm install
-          npm run build
+          pnpm install
+          pnpm run build
 
       # 安装 examples 依赖并构建
       - name: Install Examples Dependencies & Build
         run: |
           cd examples
-          npm install
-          npm run build
+          pnpm install
+          pnpm run build
 
       - name: Deploy to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4
