@@ -8,6 +8,8 @@ export enum TokenType {
   Regex = "Regex", // 正则表达式
   Operator = "Operator", // 运算符
   Punctuation = "Punctuation", // 标点符号
+  Object = "Object", // 对象字面量
+  Array = "Array", // 数组字面量
   EOF = "EOF", // 文件结束
 }
 
@@ -29,7 +31,9 @@ export type NodeType =
   | "LogicalExpression" // 逻辑表达式
   | "ConditionalExpression" // 条件表达式
   | "UnaryExpression" // 一元表达式
-  | "MemberExpression"; // 成员表达式
+  | "MemberExpression" // 成员表达式
+  | "ObjectLiteral" // 对象字面量
+  | "ArrayLiteral"; // 数组字面量
 
 export interface Node {
   type: NodeType; // 节点类型
@@ -90,6 +94,18 @@ export interface UnaryExpression extends Node {
   type: "UnaryExpression";
   operator: string; // 运算符 (!)
   argument: Node; // 操作数
+}
+
+export interface ObjectLiteral extends Node {
+  type: "ObjectLiteral";
+  properties: Map<string | number, Node>; // 对象属性
+  raw: string; // 原始字符串
+}
+
+export interface ArrayLiteral extends Node {
+  type: "ArrayLiteral";
+  elements: Node[]; // 数组元素
+  raw: string; // 原始字符串
 }
 
 export class SyntaxError extends Error {

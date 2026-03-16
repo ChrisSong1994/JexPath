@@ -70,4 +70,23 @@ describe("表达式计算引擎", () => {
     expect(myEngine.validate("1 +")).toBe(false);
     expect(myEngine.validate("UNKNOWN()")).toBe(false);
   });
+
+  it("MAPPING 映射转换", async () => {
+    // 逻辑：将 a 映射为 100，其他值保持不变
+    const result = await myEngine.run("MAPPING($.a, {1: 100})");
+    expect(result).toBe(100);
+
+    // 逻辑: 将 a 映射为数组 $.object.arr 中的值，其他值保持不变
+    const result2 = await myEngine.run("MAPPING($.a, $.object.arr)");
+    expect(result2).toBe(20);
+
+
+    // 数组字面量映射
+    const result3 = await myEngine.run("MAPPING($.a, [100, 200, 300])");
+    expect(result3).toBe(200);
+
+    // 映射到字符串key
+    const result4 = await myEngine.run("MAPPING($.a, {'1': 100, '2': 200})");
+    expect(result4).toBe(100);
+  });
 });

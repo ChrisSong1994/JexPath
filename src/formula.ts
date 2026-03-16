@@ -68,6 +68,19 @@ function parseJson(str: string) {
   return str;
 }
 
+/**
+ * 映射转换
+ * @param val 要转换的值
+ * @param mapping 映射对象
+ * @returns 转换后的值
+ */
+function mapping(val: any, mapping: Record<string | number, any> | Array<any>) {
+  if ((typeof val === "string" || typeof val === "number") && mapping[val]) {
+    return mapping[val];
+  }
+  return val;
+}
+
 // 内置公式（函数/转换）
 const innerFormulas = {
   SIZE: size,
@@ -75,6 +88,7 @@ const innerFormulas = {
   TRIM: trim,
   DATE: date,
   PARSE_JSON: parseJson,
+  MAPPING: mapping,
 };
 
 /**

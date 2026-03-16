@@ -11,6 +11,8 @@ import {
   ConditionalExpression,
   UnaryExpression,
   MemberExpression,
+  ObjectLiteral,
+  ArrayLiteral,
   SyntaxError,
 } from "./types.js";
 import { Lexer } from "./lexer.js";
@@ -21,6 +23,7 @@ const ALLOWED_FUNCTIONS = new Set([
   "TRIM",
   "DATE",
   "PARSE_JSON",
+  "MAPPING",
 ]);
 
 export class Parser {
@@ -350,6 +353,34 @@ export class Parser {
       } as Literal;
     }
 
+    // 对象字面量处理
+    if (token.type === TokenType.Object) {
+      this.advance();
+      const raw = token.value as string;
+      const properties = this.parseObjectProperties(raw);
+      return {
+        type: "ObjectLiteral",
+        properties,
+        raw,
+        start: token.start,
+        end: token.end,
+      } as ObjectLiteral;
+    }
+
+    // 数组字面量处理
+    if (token.type === TokenType.Array) {
+      this.advance();
+      const raw = token.value as string;
+      const elements = this.parseArrayElements(raw);
+      return {
+        type: "ArrayLiteral",
+        elements,
+        raw,
+        start: token.start,
+        end: token.end,
+      } as ArrayLiteral;
+    }
+
     // 标识符处理 (变量或函数调用)
     if (token.type === TokenType.Identifier) {
       const name = token.value as string;
@@ -419,5 +450,170 @@ export class Parser {
       token.line,
       token.column
     );
+  }
+
+  // 解析对象字面量的属性
+  private parseObjectProperties(raw: string): Map<string | number, Node> {
+    const properties = new Map<string | number, Node>();
+    
+    // 去掉外层的 { }
+    const content = raw.slice(1, -1).trim();
+    if (!content) {
+      return properties;
+    }
+
+    // 简单解析：分割键值对
+    const pairs = this.splitObjectPairs(content);
+    
+    for (const pair of pairs) {
+      const colonIndex = pair.indexOf(":");
+      if (colonIndex === -1) continue;
+      
+      const keyStr = pair.substring(0, colonIndex).trim();
+      const valueStr = pair.substring(colonIndex + 1).trim();
+      
+      // 解析键
+      let key: string | number;
+      if (keyStr.startsWith('"') || keyStr.startsWith("'")) {
+        key = keyStr.slice(1, -1);
+      } else if (/^\d+$/.test(keyStr)) {
+        key = parseInt(keyStr, 10);
+      } else {
+        key = keyStr;
+      }
+      
+      // 解析值（使用子 Parser）
+      try {
+        const valueParser = new Parser(valueStr);
+        const valueNode = valueParser.parse();
+        properties.set(key, valueNode);
+      } catch (e) {
+        // 如果解析失败，作为字面量处理
+        properties.set(key, {
+          type: "Literal",
+          value: valueStr,
+          raw: valueStr,
+          start: 0,
+          end: valueStr.length,
+        } as Literal);
+      }
+    }
+    
+    return properties;
+  }
+
+  // 分割对象键值对（考虑嵌套）
+  private splitObjectPairs(content: string): string[] {
+    const pairs: string[] = [];
+    let current = "";
+    let depth = 0;
+    let inString = false;
+    let stringQuote = "";
+    
+    for (let i = 0; i < content.length; i++) {
+      const char = content[i];
+      
+      if (inString) {
+        current += char;
+        if (char === "\\" && i + 1 < content.length) {
+          current += content[++i];
+        } else if (char === stringQuote) {
+          inString = false;
+        }
+        continue;
+      }
+      
+      if (char === '"' || char === "'") {
+        inString = true;
+        stringQuote = char;
+        current += char;
+        continue;
+      }
+      
+      if (char === "{" || char === "[" || char === "(") {
+        depth++;
+      } else if (char === "}" || char === "]" || char === ")") {
+        depth--;
+      } else if (char === "," && depth === 0) {
+        pairs.push(current.trim());
+        current = "";
+        continue;
+      }
+      
+      current += char;
+    }
+    
+    if (current.trim()) {
+      pairs.push(current.trim());
+    }
+    
+    return pairs;
+  }
+
+  // 解析数组字面量的元素
+  private parseArrayElements(raw: string): Node[] {
+    const elements: Node[] = [];
+    const content = raw.slice(1, -1).trim(); // 去掉 [ 和 ]
+    
+    if (!content) return elements;
+    
+    const items = this.splitArrayItems(content);
+    
+    for (const item of items) {
+      const subParser = new Parser(item);
+      const element = subParser.parse();
+      elements.push(element);
+    }
+    
+    return elements;
+  }
+
+  // 分割数组元素
+  private splitArrayItems(content: string): string[] {
+    const items: string[] = [];
+    let current = "";
+    let depth = 0;
+    let inString = false;
+    let stringQuote = "";
+    
+    for (let i = 0; i < content.length; i++) {
+      const char = content[i];
+      
+      if (inString) {
+        current += char;
+        if (char === "\\" && i + 1 < content.length) {
+          i++;
+          current += content[i];
+        } else if (char === stringQuote) {
+          inString = false;
+        }
+        continue;
+      }
+      
+      if (char === '"' || char === "'") {
+        inString = true;
+        stringQuote = char;
+        current += char;
+        continue;
+      }
+      
+      if (char === "{" || char === "[" || char === "(") {
+        depth++;
+      } else if (char === "}" || char === "]" || char === ")") {
+        depth--;
+      } else if (char === "," && depth === 0) {
+        items.push(current.trim());
+        current = "";
+        continue;
+      }
+      
+      current += char;
+    }
+    
+    if (current.trim()) {
+      items.push(current.trim());
+    }
+    
+    return items;
   }
 }

@@ -99,7 +99,6 @@ describe("严格语法验证器", () => {
     it("应该拒绝不允许的字符", () => {
       expect(() => validateSyntax("user.name")).toThrow(SyntaxError); // . 禁止
       expect(() => validateSyntax("arr[0]")).toThrow(SyntaxError); // [ 禁止
-      expect(() => validateSyntax("{ a: 1 }")).toThrow(SyntaxError); // { 禁止
       expect(() => validateSyntax("arr | filter")).toThrow(SyntaxError); // | 禁止
     });
 

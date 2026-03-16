@@ -57,6 +57,25 @@ export class Lexer {
         continue;
       }
 
+      if (char === "{") {
+        tokens.push(this.readObject());
+        continue;
+      }
+
+      if (char === "[") {
+        const lastToken = tokens.length > 0 ? tokens[tokens.length - 1] : null;
+        if (lastToken && lastToken.type === TokenType.JSONPath) {
+          // 这是 JSONPath 的一部分，已经在 readJSONPathOrIdentifier 中处理
+          throw new SyntaxError(
+            `Unexpected token '['`,
+            this.line,
+            this.column
+          );
+        }
+        tokens.push(this.readArray());
+        continue;
+      }
+
       // Check for Regex
       if (char === "/") {
         const lastToken = tokens.length > 0 ? tokens[tokens.length - 1] : null;
@@ -436,5 +455,121 @@ export class Lexer {
     }
 
     return null;
+  }
+
+  // 读取对象字面量
+  private readObject(): Token {
+    const start = this.pos;
+    const startCol = this.column;
+    let buffer = this.input[this.pos];
+    this.consume(); // 消费 '{'
+
+    let depth = 1;
+    let inString = false;
+    let stringQuote = "";
+
+    while (this.pos < this.input.length && depth > 0) {
+      const char = this.input[this.pos];
+
+      if (inString) {
+        buffer += char;
+        if (char === "\\" && this.pos + 1 < this.input.length) {
+          this.consume();
+          buffer += this.input[this.pos];
+        } else if (char === stringQuote) {
+          inString = false;
+        }
+        this.consume();
+        continue;
+      }
+
+      if (char === '"' || char === "'") {
+        inString = true;
+        stringQuote = char;
+        buffer += char;
+        this.consume();
+        continue;
+      }
+
+      if (char === "{") {
+        depth++;
+      } else if (char === "}") {
+        depth--;
+      }
+
+      buffer += char;
+      this.consume();
+    }
+
+    if (depth !== 0) {
+      throw new SyntaxError("Unterminated object literal", this.line, this.column);
+    }
+
+    return {
+      type: TokenType.Object,
+      value: buffer,
+      line: this.line,
+      column: startCol,
+      start,
+      end: this.pos,
+    };
+  }
+
+  // 读取数组字面量
+  private readArray(): Token {
+    const start = this.pos;
+    const startCol = this.column;
+    let buffer = this.input[this.pos];
+    this.consume(); // 消费 '['
+
+    let depth = 1;
+    let inString = false;
+    let stringQuote = "";
+
+    while (this.pos < this.input.length && depth > 0) {
+      const char = this.input[this.pos];
+
+      if (inString) {
+        buffer += char;
+        if (char === "\\" && this.pos + 1 < this.input.length) {
+          this.consume();
+          buffer += this.input[this.pos];
+        } else if (char === stringQuote) {
+          inString = false;
+        }
+        this.consume();
+        continue;
+      }
+
+      if (char === '"' || char === "'") {
+        inString = true;
+        stringQuote = char;
+        buffer += char;
+        this.consume();
+        continue;
+      }
+
+      if (char === "[" || char === "{" || char === "(") {
+        depth++;
+      } else if (char === "]" || char === "}" || char === ")") {
+        depth--;
+      }
+
+      buffer += char;
+      this.consume();
+    }
+
+    if (depth !== 0) {
+      throw new SyntaxError("Unterminated array literal", this.line, this.column);
+    }
+
+    return {
+      type: TokenType.Array,
+      value: buffer,
+      line: this.line,
+      column: startCol,
+      start,
+      end: this.pos,
+    };
   }
 }
