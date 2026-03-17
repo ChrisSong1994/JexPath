@@ -173,6 +173,10 @@ const examples = [
     value: "$.users[0].active && $.users[0].roles[0] == 'admin'",
   },
   { label: "正则替换", value: "REPLACE($.store.name, /\\s+/, '_')" },
+  { label: "MAPPING-简单键值映射", value: "MAPPING($.users[0].name, {'John': 'Johnny', 'Jane': 'Janet'})" },
+  { label: "MAPPING-数组索引映射", value: "MAPPING($.users[0].age, [10, 20, 30, 40, 50])" },
+  { label: "MAPPING-默认值映射", value: "MAPPING($.users[1].name, {'John': 'Admin', 'Jane': 'User'}, 'Guest')" },
+  { label: "MAPPING-数字映射", value: "MAPPING($.users[0].age, {30: 'Thirty', 25: 'TwentyFive'})" },
 ];
 
 function App() {
