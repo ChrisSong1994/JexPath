@@ -1,165 +1,177 @@
-# JexPath 使用指南
+# JexPath 语法速查
 
-JexPath 是一个结合了 Jexl 表达式引擎和 JSONPath 数据查询能力的库，允许您在表达式中直接使用 JSONPath 语法来访问和操作深层嵌套的数据。
+JexPath 是结合 Jexl 计算能力与 JSONPath 查询能力的严格表达式引擎。所有属性访问必须以 `$` 开头。
 
-## 核心功能
+## 字面量
 
-1.  **混合语法**：在 Jexl 表达式中无缝嵌入 JSONPath（如 `$.store.book[0].price`）。
-2.  **严格校验**：提供内置的语法校验器，支持严格模式的语法检查（仅允许白名单内的函数和运算符）。
-3.  **扩展函数**：内置 `SIZE`, `REPLACE`, `TRIM`, `DATE`, `PARSE_JSON` 等实用函数。
+| 类型 | 示例 |
+|------|------|
+| 整数 | `1`, `100` |
+| 浮点数 | `1.5`, `0.9` |
+| 字符串 | `'hello'`, `"world"` |
+| 布尔值 | `true`, `false` |
+| 正则 | `/\s+/`, `/\s+/g` |
 
-## 安装
+## 数据访问 (JSONPath)
 
-```bash
-npm install @fett/jexpath
-# 或
-pnpm add @fett/jexpath
+| 语法 | 说明 | 示例 |
+|------|------|------|
+| `$.a.b` | 点号访问 | `$.store.bicycle.color` |
+| `$['a']['b']` | 括号访问 | `$['store']['book']` |
+| 混合 | 点号+括号 | `$.store['bicycle'].price` |
+| `$.a[0]` | 数组索引 | `$.store.book[0].title` |
+| `$.a[-1:]` | 末尾元素 | `'$.store.book[-1:].title'` |
+| `$.a[0:2]` | 切片 | `'$.store.book[0:2].title'` |
+| `$.a[*]` | 通配符 | `'$.store.book[*].title'` |
+| `$..b` | 递归下降 | `'$..price'` |
+| `[?(@.x)]` | 过滤器 | `'$.store.book[?(@.price < 10)].title'` |
+| `[?(@.x)]` | 存在性过滤 | `'$.store.book[?(@.isbn)].title'` |
+| `$..[?()]` | 递归过滤 | `'$..[?(@.price > 20)].title'` |
+
+特殊键名必须使用括号：`$['key with spaces']`、`$['key.with.dots']`
+
+**JSONPath 特殊语法需加引号**：`[*]`、`..`、`[?()]`、`[:]`、`[-1:]` 等必须用单引号包裹。
+
+## 运算符
+
+### 算术：`+` `-` `*` `/` `%` `**`
+
+```
+$.price * 0.9
+$.a + $.b
+$.base ** 2
+$.num % 10
 ```
 
-## 快速开始
+算术运算要求操作数为数值类型，`1 - 'a'` 会报错。
 
-### 1. 基础使用
+### 字符串拼接：`+`
+
+```
+'Hello' + ' ' + 'World'          // → "Hello World"
+$.firstName + ' ' + $.lastName   // → "John Doe"
+'Age: ' + $.age                  // → "Age: 30"（隐式转换）
+```
+
+`+` 遇到字符串时自动做隐式转换：`'Count: ' + 5` → `"Count: 5"`，`5 + '5'` → `"55"`。
+
+### 比较：`==` `!=` `>` `<` `>=` `<=`
+
+```
+$.status == 'active'
+$.price > 100
+$.age < 18
+```
+
+比较运算要求两边类型兼容，`1 == 'a'`、`1 > 'a'` 会报错。
+
+### 逻辑：`&&` `||` `!`
+
+```
+$.active && $.verified
+$.isAdmin || $.isModerator
+!$.blocked
+($.age > 18) && ($.active || $.vip)
+```
+
+逻辑运算要求操作数为布尔类型，`1 && 2`、`true || 1` 会报错。
+
+### 三元：`? :`
+
+```
+$.score > 60 ? 'Pass' : 'Fail'
+$.score >= 90 ? 'A' : $.score >= 80 ? 'B' : 'C'
+$.price > 100 ? $.price * 0.9 : $.price
+```
+
+条件表达式必须为布尔类型，`1 ? 2 : 3` 会报错。
+
+## 内置函数
+
+| 函数 | 参数 | 返回 | 说明 |
+|------|------|------|------|
+| `SIZE(val)` | String \| Array | Integer | 字符串长度或数组元素个数 |
+| `TRIM(str)` | String | String | 去除首尾空格 |
+| `REPLACE(str, search, replace)` | String, String\|Regex, String | String | 替换子串，支持正则 |
+| `DATE(val?, fmt?)` | String\|Integer (可选), String (可选) | String | 格式化日期 |
+| `PARSE_JSON(str)` | String | Object | 解析 JSON 字符串为对象 |
+| `MAPPING(val, mapping)` | Any, Object\|Array | Any | 值映射转换 |
+
+### SIZE
+
+```
+SIZE($.items)        // 数组长度
+SIZE($.name)         // 字符串长度
+SIZE('hello')        // → 5
+```
+
+### TRIM
+
+```
+TRIM($.name)         // "  hello  " → "hello"
+```
+
+### REPLACE
+
+```
+REPLACE($.text, 'old', 'new')        // 字符串替换
+REPLACE($.text, /\s+/, '-')          // 正则替换（首次）
+REPLACE($.text, /\s+/g, '-')         // 正则替换（全局）
+REPLACE($.text, /\s+$/, '')          // 去除尾部空格
+REPLACE($.text, /\//, '-')           // 转义正则中的 /
+```
+
+### DATE
+
+```
+DATE()                              // 当前日期
+DATE('YYYY-MM-DD')                  // 当前日期，指定格式
+DATE($.timestamp, 'YYYY-MM-DD')    // 时间戳 → "2023-01-01"
+DATE($.dateStr, 'YYYY-MM-DD HH:mm:ss')
+```
+
+### PARSE_JSON
+
+```
+PARSE_JSON($.jsonStr)                          // 解析为对象
+PARSE_JSON($.meta).lastLogin                   // 解析后访问属性
+PARSE_JSON('{"score": 100}').score             // → 100
+PARSE_JSON($['json-str']).score * $.a          // 与运算结合
+```
+
+### MAPPING
+
+```
+MAPPING($.status, {1: '激活', 2: '停用'})       // 对象映射（数字键）
+MAPPING($.code, {'A': '优秀', 'B': '良好'})     // 对象映射（字符串键）
+MAPPING($.index, ['第一', '第二', '第三'])       // 数组映射（0索引）
+MAPPING($.a, $.object.arr)                      // 动态映射源
+```
+
+## 语法校验
 
 ```typescript
 import JexPath from "@fett/jexpath";
-
-const data = {
-  store: {
-    book: [
-      { category: "reference", author: "Nigel Rees", title: "Sayings of the Century", price: 8.95 },
-      { category: "fiction", author: "Evelyn Waugh", title: "Sword of Honour", price: 12.99 }
-    ]
-  },
-  discount: 0.8
-};
-
-// 初始化引擎
-const engine = new JexPath(data);
-
-// 执行表达式：计算第一本书折后价格
-// 注意：JSONPath 必须以 $ 开头
-const result = await engine.run("$.store.book[0].price * $.discount");
-console.log(result); // 7.16
-```
-
-### 2. 语法校验
-
-JexPath 提供了一个严格的语法校验器，用于在执行前检查表达式是否合法。
-
-**支持的校验规则：**
-
-*   **函数**: `SIZE`, `REPLACE`, `TRIM`, `DATE`, `PARSE_JSON`
-*   **算术**: `+`, `-`, `*`, `/`, `%`, `**`
-*   **比较**: `==`, `!=`, `>`, `<`, `>=`, `<=`
-*   **逻辑**: `&&`, `||`, `!`
-*   **三元**: `condition ? true : false`
-*   **JSONPath**: 支持完整规范，包括过滤器 `[?(@.price < 10)]`、递归 `..`、切片 `[:]` 等。
-
-**使用方式：**
-
-```typescript
-import JexPath from "@fett/jexpath";
-
-const engine = new JexPath({});
-
-// 1. 使用实例方法 validate (返回 boolean)
-const isValid = engine.validate("SIZE($.items) > 0");
-if (isValid) {
-  console.log("语法正确");
-} else {
-  console.error("语法错误");
-}
-
-// 2. 获取具体错误信息 (导入静态方法)
 import { validateSyntax } from "@fett/jexpath";
 
-try {
-  validateSyntax("SIZE(123)"); // 错误：SIZE 期望字符串或数组
-} catch (e) {
-  console.error(`错误位置: ${e.line}:${e.column}, 原因: ${e.message}`);
-}
+// 实例方法：返回 boolean
+const engine = new JexPath(data);
+engine.validate("SIZE($.items) > 0");  // true
+engine.validate("UNKNOWN()");           // false
+
+// 静态方法：抛出详细错误
+validateSyntax("SIZE(123)");
+// → "SIZE argument must be one of [String]"
+
+validateSyntax("user.name");
+// → "Property access must start with '$'"
 ```
 
-## 复杂示例
+## 规则速记
 
-假设我们有一个复杂的电商订单数据，需要根据特定规则计算“高价值订单”的加权得分。
-
-**数据结构：**
-
-```json
-{
-  "orderId": "ORD-2023-001",
-  "user": {
-    "level": "VIP",
-    "region": "CN"
-  },
-  "items": [
-    { "id": "A1", "name": "Laptop", "price": 5000, "tags": ["electronics", "work"] },
-    { "id": "B2", "name": "Coffee", "price": 50, "tags": ["food"] },
-    { "id": "C3", "name": "Mouse", "price": 120, "tags": ["electronics"] }
-  ],
-  "coupon": {
-    "type": "discount",
-    "value": 0.9
-  }
-}
-```
-
-**业务需求：**
-
-计算订单得分，规则如下：
-1.  如果用户是 VIP，基础分为 100，否则为 50。
-2.  筛选出所有价格大于 100 的商品（电子产品或高价商品）。
-3.  计算这些筛选后商品的总价。
-4.  如果筛选后的商品数量超过 2 个，得分翻倍。
-5.  最终得分 = (基础分 + 筛选商品总价) * (数量加成 ? 2 : 1)。
-
-**实现代码：**
-
-```typescript
-import JexPath from "@fett/jexpath";
-
-const context = {
-  order: {
-    id: "ORD-2023-001",
-    user: { level: "VIP", region: "CN" },
-    items: [
-      { id: "A1", "name": "Laptop", "price": 5000, "tags": ["electronics"] },
-      { id: "B2", "name": "Coffee", "price": 50, "tags": ["food"] },
-      { id: "C3", "name": "Mouse", "price": 120, "tags": ["electronics"] },
-      { id: "D4", "name": "Monitor", "price": 2000, "tags": ["electronics"] }
-    ]
-  }
-};
-
-const engine = new JexPath(context);
-
-// 复杂表达式
-// 1. 使用 JSONPath 过滤器筛选价格 > 100 的商品
-// 2. 使用逻辑判断用户等级
-// 3. 结合三元运算符计算最终结果
-const expression = `
-  (
-    ($.order.user.level == 'VIP' ? 100 : 50) + 
-    SIZE($.order.items[?(@.price > 100)]) * 1000 
-  ) * 
-  (SIZE($.order.items[?(@.price > 100)]) >= 3 ? 2 : 1)
-`;
-
-// 校验语法 (注意：实际使用时建议去除换行或确保解析器支持)
-// JexPath 的 Lexer 支持换行符
-if (engine.validate(expression)) {
-  const score = await engine.run(expression);
-  console.log(`订单得分: ${score}`);
-}
-```
-
-## 内置函数参考
-
-| 函数名 | 参数 | 描述 |
-| :--- | :--- | :--- |
-| `SIZE(val)` | `val`: String \| Array | 返回字符串长度或数组元素个数 |
-| `TRIM(str)` | `str`: String | 去除字符串首尾空格 |
-| `REPLACE(str, search, replace)` | `str`: String, `search`: String, `replace`: String | 替换字符串中的子串 |
-| `DATE(str?, fmt?)` | `str`: String (可选), `fmt`: String (可选) | 格式化日期或获取当前日期 |
-| `PARSE_JSON(str)` | `str`: String | 将 JSON 字符串解析为对象 |
+1. **属性必须 `$` 开头** — `user.name` 非法，`$.user.name` 合法
+2. **JSONPath 特殊语法加引号** — `'$.items[*]'` 合法，`$.items[*]` 非法
+3. **函数大小写敏感** — `SIZE()` 合法，`size()` 非法
+4. **类型严格检查** — `1 - 'a'`、`1 && 2`、`1 ? 2 : 3` 均非法
+5. **不允许的运算符** — `&`、`=`、`|`（非 `||`）会被拒绝
+6. **仅限内置函数** — `UNKNOWN()` 会报 "Function 'UNKNOWN' is not allowed"
